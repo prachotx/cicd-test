@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { getItems, createItem, updateItem, deleteItem, getHealth } from './api';
+import { getItems, createItem, updateItem, deleteItem } from './api';
 
 const emptyForm = { name: '', description: '', price: '' };
 
@@ -9,7 +9,6 @@ export default function App() {
   const [editingId, setEditingId] = useState(null);
   const [error, setError] = useState('');
   const [loading, setLoading] = useState(true);
-  const [version, setVersion] = useState('');
 
   const load = async () => {
     try {
@@ -24,9 +23,6 @@ export default function App() {
 
   useEffect(() => {
     load();
-    getHealth()
-      .then((h) => setVersion(h.version))
-      .catch(() => {});
   }, []);
 
   const handleChange = (e) => setForm({ ...form, [e.target.name]: e.target.value });
@@ -159,8 +155,6 @@ export default function App() {
           </table>
         )}
       </div>
-
-      {version && <p className="mt-4 text-center text-xs text-gray-400">version {version}</p>}
     </div>
   );
 }
