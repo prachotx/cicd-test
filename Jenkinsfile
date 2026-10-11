@@ -139,7 +139,8 @@ pipeline {
 
             # วิเคราะห์ commit ตั้งแต่ tag ล่าสุด -> ถ้ามี feat/fix จะสร้าง tag vX.Y.Z + GitHub Release
             # ถ้าไม่มี commit ที่ต้อง release จะจบเฉย ๆ ไม่ error
-            npx --yes semantic-release@24
+            # -p conventional-changelog-conventionalcommits = preset ที่ .releaserc.json ใช้ (รองรับ feat!: เป็น major)
+            npx --yes -p semantic-release@24 -p conventional-changelog-conventionalcommits@8 semantic-release
           '''
         }
         script {

@@ -56,7 +56,7 @@ docker compose -f docker-compose.dev.yml down -v
 
 | commit | ผล |
 |--------|----|
-| `fix: ...` | 1.0.0 → 1.0.1 |
+| `fix: ...`, `perf: ...` | 1.0.0 → 1.0.1 |
 | `feat: ...` | 1.0.0 → 1.1.0 |
 | `feat!: ...` / `BREAKING CHANGE:` | 1.0.0 → 2.0.0 |
 | `docs:`, `chore:`, อื่น ๆ | ไม่ออก release |
