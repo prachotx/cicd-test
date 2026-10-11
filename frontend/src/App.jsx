@@ -71,7 +71,7 @@ export default function App() {
 
   return (
     <div className="max-w-3xl mx-auto p-6 bg-yellow-300">
-      <h1 className="text-3xl font-bold text-gray-800 mb-6">📦 Items CRUD 2</h1>
+      <h1 className="text-3xl font-bold text-gray-800 mb-6">📦 Items CRUD Test</h1>
 
       {error && (
         <div className="mb-4 rounded bg-red-100 text-red-700 px-4 py-2">{error}</div>
