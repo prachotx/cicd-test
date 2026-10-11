@@ -66,7 +66,7 @@ export default function App() {
   };
 
   return (
-    <div className="max-w-3xl mx-auto p-6">
+    <div className="max-w-3xl mx-auto p-6 bg-red-300">
       <h1 className="text-3xl font-bold text-gray-800 mb-6">📦 Items CRUD</h1>
 
       {error && (
