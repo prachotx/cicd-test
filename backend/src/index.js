@@ -14,6 +14,7 @@ app.get('/api/items', async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM items ORDER BY id DESC');
     res.json(rows);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -25,6 +26,7 @@ app.get('/api/items/:id', async (req, res) => {
     if (rows.length === 0) return res.status(404).json({ message: 'Item not found' });
     res.json(rows[0]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -41,6 +43,7 @@ app.post('/api/items', async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM items WHERE id = ?', [result.insertId]);
     res.status(201).json(rows[0]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -58,6 +61,7 @@ app.put('/api/items/:id', async (req, res) => {
     const [rows] = await pool.query('SELECT * FROM items WHERE id = ?', [req.params.id]);
     res.json(rows[0]);
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });
@@ -69,6 +73,7 @@ app.delete('/api/items/:id', async (req, res) => {
     if (result.affectedRows === 0) return res.status(404).json({ message: 'Item not found' });
     res.status(204).end();
   } catch (err) {
+    console.error(err);
     res.status(500).json({ message: err.message });
   }
 });

@@ -12,7 +12,9 @@ services:
     volumes:
       - db_data_prod:/var/lib/mysql
     healthcheck:
-      test: ["CMD-SHELL", "mysqladmin ping -h localhost -uroot -p$$MYSQL_ROOT_PASSWORD"]
+      # ต้องใช้ 127.0.0.1 (TCP) ไม่ใช่ localhost (socket): ตอนรัน init.sql MySQL จะเปิด server ชั่วคราวแบบ socket อย่างเดียว
+      # ถ้า ping ผ่าน socket จะ "healthy" ก่อนสร้างตารางเสร็จ -> backend ต่อไม่ได้ได้ 500
+      test: ["CMD-SHELL", "mysqladmin ping -h 127.0.0.1 -uroot -p$$MYSQL_ROOT_PASSWORD"]
       interval: 10s
       timeout: 5s
       retries: 20

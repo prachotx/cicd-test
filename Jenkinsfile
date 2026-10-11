@@ -67,11 +67,13 @@ pipeline {
           for i in $(seq 1 30); do
             # exec -T = รันคำสั่งใน container frontend (-T คือไม่ต้องใช้ terminal เพราะ Jenkins ไม่มี)
             # wget -qO- = ยิง HTTP แล้วพิมพ์ผลลัพธ์ออกจอ, ใช้ 127.0.0.1 เพราะ localhost ใน alpine ชี้ไป IPv6
-            if docker compose -p $TEST_PROJECT exec -T frontend wget -qO- http://127.0.0.1/api/health; then
+            # 2>/dev/null = ซ่อน error ระหว่างรอ (ช่วงแรกจะได้ 502 เพราะ backend ยังสตาร์ทไม่เสร็จ ซึ่งเป็นเรื่องปกติ)
+            if docker compose -p $TEST_PROJECT exec -T frontend wget -qO- http://127.0.0.1/api/health 2>/dev/null; then
               break   # ตอบกลับสำเร็จ -> ออกจาก loop
             fi
             # ครบ 30 ครั้งแล้วยังไม่ตอบ -> exit 1 ทำให้ stage นี้ fail
             [ "$i" = 30 ] && { echo "API ไม่ตอบ"; exit 1; }
+            echo "รอ backend... ($i/30)"
             sleep 2
           done
           echo
