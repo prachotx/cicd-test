@@ -20,12 +20,15 @@ services:
       retries: 20
 
   backend:
+    # APP_VERSION มาจาก Jenkins (stage Release) -> image จะมี tag ตามเวอร์ชัน เช่น crud-backend:1.2.0
+    image: crud-backend:${APP_VERSION:-latest}
     build:
       context: ./backend
       target: prod
     restart: always
     environment:
       NODE_ENV: production
+      APP_VERSION: ${APP_VERSION:-dev}
       PORT: 3000
       DB_HOST: db
       DB_PORT: 3306
@@ -37,6 +40,7 @@ services:
         condition: service_healthy
 
   frontend:
+    image: crud-frontend:${APP_VERSION:-latest}
     build:
       context: ./frontend
       target: prod

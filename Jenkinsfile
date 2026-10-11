@@ -1,8 +1,11 @@
-// CI/CD แบบพื้นฐาน: Checkout -> Build -> Test -> Deploy
+// CI/CD: Checkout -> Build -> Test -> Release (semantic-release) -> Deploy
 //
-// สิ่งที่ต้องมีบน Jenkins: docker CLI + docker compose plugin และสิทธิ์ใช้ /var/run/docker.sock
+// สิ่งที่ต้องมีบน Jenkins:
+//   - docker CLI + docker compose plugin และสิทธิ์ใช้ /var/run/docker.sock
+//   - NodeJS plugin + ตั้ง tool ชื่อ 'node22' (Manage Jenkins > Tools > NodeJS installations)
 // Credential (Manage Jenkins > Credentials):
 //   - crud-prod-env : Secret file = ไฟล์ .env ของ production (ดู .env.example)
+//   - github-token  : Secret text = GitHub Personal Access Token (สิทธิ์ Contents: Read and write)
 
 pipeline {
   // รันบน agent (เครื่อง/node) ตัวไหนก็ได้ที่ว่าง — ถ้ามี Jenkins เครื่องเดียวก็คือตัว Jenkins เอง
@@ -105,7 +108,58 @@ pipeline {
     }
 
     // ---------------------------------------------------------------
-    // 4) Deploy ขึ้น production (มาถึงตรงนี้ได้แปลว่า Build + Test ผ่านแล้ว)
+    // 4) ออกเวอร์ชันใหม่อัตโนมัติด้วย semantic-release (ดู .releaserc.json)
+    //    คำนวณเลขเวอร์ชันจาก commit message แบบ Conventional Commits:
+    //      fix: ...  -> patch (1.0.0 -> 1.0.1)
+    //      feat: ... -> minor (1.0.0 -> 1.1.0)
+    //      feat!: ... หรือมี "BREAKING CHANGE:" -> major (1.0.0 -> 2.0.0)
+    // ---------------------------------------------------------------
+    stage('Release') {
+      // ออก release เฉพาะ branch main (ตรงกับ "branches" ใน .releaserc.json)
+      when {
+        expression { env.BRANCH_NAME == 'main' || env.GIT_BRANCH == 'origin/main' }
+      }
+      // ใช้ Node.js จาก NodeJS plugin (ชื่อต้องตรงกับที่ตั้งใน Manage Jenkins > Tools)
+      tools {
+        nodejs 'node22'
+      }
+      steps {
+        // GITHUB_TOKEN = ใช้ push git tag และสร้าง GitHub Release (Jenkins จะซ่อนค่าใน log ให้)
+        withCredentials([string(credentialsId: 'github-token', variable: 'GITHUB_TOKEN')]) {
+          sh '''
+            # ดึง tag ทั้งหมด semantic-release ต้องรู้ tag ล่าสุดเพื่อคำนวณเวอร์ชันถัดไป
+            git fetch --tags --force
+
+            # Jenkins checkout มาแบบ detached HEAD แต่ semantic-release ต้องอยู่บน branch จริง
+            git checkout -B main
+
+            # semantic-release อ่านชื่อ branch จากตัวแปรนี้ก่อน
+            # (ถ้าไม่ตั้ง จะไปอ่าน GIT_BRANCH ซึ่งเป็น "origin/main" แล้วไม่ตรงกับ "main" ใน config)
+            export GIT_LOCAL_BRANCH=main
+
+            # วิเคราะห์ commit ตั้งแต่ tag ล่าสุด -> ถ้ามี feat/fix จะสร้าง tag vX.Y.Z + GitHub Release
+            # ถ้าไม่มี commit ที่ต้อง release จะจบเฉย ๆ ไม่ error
+            npx --yes semantic-release@24
+          '''
+        }
+        script {
+          // อ่านเวอร์ชันจาก git tag
+          //   - commit นี้มี tag พอดี (เพิ่ง release)  -> "1.2.0"
+          //   - มี commit หลัง tag ที่ไม่ต้อง release -> "1.2.0-3-gabc1234" (3 commit หลัง v1.2.0)
+          //   - ยังไม่เคย release เลย               -> "0.0.0-gabc1234"
+          env.APP_VERSION = sh(
+            script: '''git describe --tags --match 'v[0-9]*' 2>/dev/null || echo "v0.0.0-g$(git rev-parse --short HEAD)"''',
+            returnStdout: true
+          ).trim().replaceFirst(/^v/, '')
+          // แสดงเวอร์ชันในหน้า build history ของ Jenkins
+          currentBuild.displayName = "#${env.BUILD_NUMBER} v${env.APP_VERSION}"
+          echo "APP_VERSION = ${env.APP_VERSION}"
+        }
+      }
+    }
+
+    // ---------------------------------------------------------------
+    // 5) Deploy ขึ้น production (มาถึงตรงนี้ได้แปลว่า Build + Test ผ่านแล้ว)
     // ---------------------------------------------------------------
     stage('Deploy') {
       // deploy เฉพาะ branch main เท่านั้น
@@ -120,6 +174,7 @@ pipeline {
         withCredentials([file(credentialsId: 'crud-prod-env', variable: 'PROD_ENV_FILE')]) {
           sh '''
             # ไม่ใส่ -p -> ใช้ชื่อ project จากในไฟล์ compose คือ crud-prod
+            # APP_VERSION (จาก stage Release) -> image tag เช่น crud-backend:1.2.0 และแสดงที่ /api/health + ท้ายหน้าเว็บ
             # --build          = build image ใหม่จากโค้ดล่าสุด (layer ส่วนใหญ่ใช้ cache จาก stage Build)
             # -d --wait        = รันเบื้องหลังและรอจนทุก container พร้อม
             # --remove-orphans = ลบ container ของ service ที่ไม่มีในไฟล์ compose แล้ว

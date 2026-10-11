@@ -6,7 +6,9 @@ const app = express();
 app.use(cors());
 app.use(express.json());
 
-app.get('/api/health', (req, res) => res.json({ status: 'ok' }));
+app.get('/api/health', (req, res) =>
+  res.json({ status: 'ok', version: process.env.APP_VERSION || 'dev' })
+);
 
 // READ all
 app.get('/api/items', async (req, res) => {

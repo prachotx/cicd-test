@@ -47,3 +47,18 @@ Body: `{ "name": "...", "description": "...", "price": 100 }`
 docker compose -f docker-compose.dev.yml down -v
 ```
 
+
+## CI/CD (Jenkins + semantic-release)
+
+[Jenkinsfile](Jenkinsfile): Checkout → Build → Test → Release → Deploy (Release/Deploy เฉพาะ `main`)
+
+เวอร์ชันคำนวณจาก commit message ([Conventional Commits](https://www.conventionalcommits.org/)) ตาม [.releaserc.json](.releaserc.json):
+
+| commit | ผล |
+|--------|----|
+| `fix: ...` | 1.0.0 → 1.0.1 |
+| `feat: ...` | 1.0.0 → 1.1.0 |
+| `feat!: ...` / `BREAKING CHANGE:` | 1.0.0 → 2.0.0 |
+| `docs:`, `chore:`, อื่น ๆ | ไม่ออก release |
+
+ดูเวอร์ชันที่ deploy อยู่: `GET /api/health` หรือท้ายหน้าเว็บ
